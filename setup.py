@@ -31,7 +31,7 @@ setup(name='schema-salad',
           'requests',
           'PyYAML',
           'avro',
-          'rdflib >= 4.2.0',
+          'rdflib >= 4.1.0',
           'rdflib-jsonld >= 0.3.0',
           'mistune'
         ],
