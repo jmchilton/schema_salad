@@ -38,6 +38,7 @@ class JavaTypeDef(TypeDef):  # pylint: disable=too-few-public-methods
         "ref_scope",
         "loader_type",
         "instance_type",
+        "abstract",
     ]
 
     def __init__(
@@ -49,10 +50,12 @@ class JavaTypeDef(TypeDef):  # pylint: disable=too-few-public-methods
         ref_scope=0,  # type: Optional[int]
         loader_type="Loader<Object>",  # type: Text
         instance_type="Object",  # type: Text
+        abstract=False,  # type: bool
     ):  # type: (...) -> None
         super(JavaTypeDef, self).__init__(name, init, is_uri, scoped_id, ref_scope)
         self.loader_type = loader_type
         self.instance_type = instance_type
+        self.abstract = abstract
 
 
 class JavaCodeGen(CodeGenBase):
@@ -304,14 +307,17 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                 "https://w3id.org/cwl/salad#array",
             ):
                 i = self.type_loader(type_declaration["items"])
+                element_type = i.instance_type
+                if i.abstract:
+                    element_type = "Object"
                 return self.declare_type(
                     JavaTypeDef(
                         # special doesn't work out with subclassing, gotta be more clever
                         # instance_type="List<{}>".format(i.instance_type),
-                        instance_type="List<Object>",
+                        instance_type="List<{}>".format(element_type),
                         name="array_of_{}".format(i.name),
                         init="new ArrayLoader({})".format(i.name),
-                        loader_type="Loader<List<Object>>",
+                        loader_type="Loader<List<{}>>".format(element_type),
                     )
                 )
             if type_declaration["type"] in ("enum", "https://w3id.org/cwl/salad#enum"):
@@ -340,6 +346,7 @@ public class {cls}Impl extends SavableImpl implements {cls} {{
                 )
                 return self.declare_type(
                     JavaTypeDef(
+                        abstract=is_abstract,
                         instance_type=self.safe_name(type_declaration["name"]),
                         name=self.safe_name(type_declaration["name"]) + "Loader",
                         init="new RecordLoader<{clazz}>({clazz}{ext}.class)".format(
